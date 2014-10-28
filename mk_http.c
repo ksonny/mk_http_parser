@@ -310,8 +310,9 @@ void test(int id, char *buf, int res)
                id);
     }
     else {
-        printf("%s[%s%sFAIL%s%s]%s  test='%21i'",
-               ANSI_BOLD, ANSI_RESET, ANSI_RED, ANSI_RESET, ANSI_BOLD, ANSI_RESET,
+        printf("%s[%s%s%s____FAIL_____%s%s]%s  test='%21i'",
+               ANSI_BOLD, ANSI_RESET, ANSI_BOLD, ANSI_RED,
+               ANSI_RESET, ANSI_BOLD, ANSI_RESET,
                id);
     }
 
@@ -335,6 +336,8 @@ int main()
     char *r8  = "GET / HTTP/1.0\r\nA: B\r\n\r\n";
     char *r9  = "GET / HTTP/1.0\r\nA1: AAAA\r\nA2:   BBBB\r\n\r\n";
     char *r10 = "GET / HTTP/1.0\r\nB1: BBAA\r\nB2:   BBBB   \r\n\r\n";
+    char *r11 = "GET / HTTP/1.0\r\nB1:\r\n\r\n";
+    char *r12 = "GET / HTTP/1.0\r\nB1:\r\n";
 
     test(1, r1, TEST_OK);
     test(2, r2, TEST_FAIL);
@@ -346,6 +349,8 @@ int main()
     test(8, r8, TEST_OK);
     test(9, r9, TEST_OK);
     test(10, r10, TEST_OK);
+    test(11, r11, TEST_FAIL);
+    test(12, r12, TEST_FAIL);
 
     printf("\n");
     return 0;
