@@ -45,20 +45,21 @@ enum {
 /* Statuses per levels */
 enum {
     /* REQ_LEVEL_FIRST */
-    MK_ST_REQ_METHOD       = 1,
-    MK_ST_REQ_URI          ,
-    MK_ST_REQ_QUERY_STRING ,
-    MK_ST_REQ_PROT_VERSION ,
-    MK_ST_FIRST_CONTINUE   ,
-    MK_ST_FIRST_FINALIZE   ,    /* LEVEL_FIRST finalize the request */
+    MK_ST_REQ_METHOD        = 1,
+    MK_ST_REQ_URI           ,
+    MK_ST_REQ_QUERY_STRING  ,
+    MK_ST_REQ_PROT_VERSION  ,
+    MK_ST_FIRST_CONTINUE    ,
+    MK_ST_FIRST_FINALIZE    ,    /* LEVEL_FIRST finalize the request */
 
     /* REQ_HEADERS */
-    MK_ST_HEADER_KEY       ,
-    MK_ST_HEADER_VALUE     ,
-    MK_ST_HEADER_END       ,
-    MK_ST_BLOCK_END        ,
+    MK_ST_HEADER_KEY        ,
+    MK_ST_HEADER_VAL_STARTS ,
+    MK_ST_HEADER_VALUE      ,
+    MK_ST_HEADER_END        ,
+    MK_ST_BLOCK_END         ,
 
-    MK_ST_LF               ,
+    MK_ST_LF                ,
     MK_ST_DONE
 };
 
@@ -83,9 +84,12 @@ void p_field(mk_http_request_t *req, char *buffer)
 {
     int i;
 
+    printf("'");
     for (i = req->start; i < req->end; i++) {
         printf("%c", buffer[i]);
     }
+    printf("'");
+
 }
 
 static inline int eval_field(mk_http_request_t *req, char *buffer)
@@ -100,22 +104,22 @@ static inline int eval_field(mk_http_request_t *req, char *buffer)
     printf(" ");
     switch (req->status) {
     case MK_ST_REQ_METHOD:
-        printf("MK_ST_REQ_METHOD      : ");
+        printf("MK_ST_REQ_METHOD       : ");
         break;
     case MK_ST_REQ_URI:
-        printf("MK_ST_REQ_URI         : ");
+        printf("MK_ST_REQ_URI          : ");
         break;
     case MK_ST_REQ_QUERY_STRING:
-        printf("MK_ST_REQ_QUERY_STRING: ");
+        printf("MK_ST_REQ_QUERY_STRING : ");
         break;
     case MK_ST_REQ_PROT_VERSION:
-        printf("MK_ST_REQ_PROT_VERSION: ");
+        printf("MK_ST_REQ_PROT_VERSION : ");
         break;
     case MK_ST_HEADER_KEY:
-        printf("MK_ST_HEADER_KEY      : ");
+        printf("MK_ST_HEADER_KEY       : ");
         break;
-    case MK_ST_HEADER_VALUE:
-        printf("MK_ST_HEADER_VALUE    : ");
+    case MK_ST_HEADER_VAL_STARTS:
+        printf("MK_ST_HEADER_VAL_STARTS: ");
         break;
     default:
         printf("\033[31mUNKNOWN UNKNOWN\033[0m       : ");
@@ -227,22 +231,27 @@ int mk_http_parser(mk_http_request_t *req, char *buffer, int len)
                 }
             }
             else if (req->status == MK_ST_HEADER_VALUE) {
-                if (buffer[i] == ' ') {
-                    continue;
+                if (buffer[i] != ' ') {
+                    req->status = MK_ST_HEADER_VAL_STARTS;
+                    i--;
+                    parse_next();
                 }
                 else {
+                    continue;
+                }
+            }
+            else if (req->status == MK_ST_HEADER_VAL_STARTS) {
+                if (buffer[i] == '\r') {
                     mark_end();
                     req->status = MK_ST_HEADER_END;
                     parse_next();
                 }
+                continue;
             }
             else if (req->status == MK_ST_HEADER_END) {
-                if (buffer[i] == '\r') {
-                    mark_end();
-                    continue;
-                }
-                else if (buffer[i] == '\n') {
+                if (buffer[i] == '\n') {
                     req->status = MK_ST_HEADER_KEY;
+                    parse_next();
                 }
             }
         }
@@ -295,13 +304,13 @@ void test(int id, char *buf, int res)
     }
 
     if (status == TEST_OK) {
-        printf("%s[%s%s%s______OK_____%s%s]%s  test %20i",
+        printf("%s[%s%s%s______OK_____%s%s]%s  test %21i",
                ANSI_BOLD, ANSI_RESET, ANSI_BOLD, ANSI_GREEN,
                ANSI_RESET, ANSI_BOLD, ANSI_RESET,
                id);
     }
     else {
-        printf("%s[%s%sFAIL%s%s]%s  test='%2i'",
+        printf("%s[%s%sFAIL%s%s]%s  test='%21i'",
                ANSI_BOLD, ANSI_RESET, ANSI_RED, ANSI_RESET, ANSI_BOLD, ANSI_RESET,
                id);
     }
@@ -316,14 +325,16 @@ void test(int id, char *buf, int res)
 
 int main()
 {
-    char *r1 = "GET / HTTP/1.0\r\n\r\n";
-    char *r2 = "GET/HTTP/1.0\r\n\r\n";
-    char *r3 = "GET /HTTP/1.0\r\n\r\n";
-    char *r4 = "GET / HTTP/1.0\r\r";
-    char *r5 = "GET/ HTTP/1.0\r\n\r";
-    char *r6 = "     \r\n\r\n";
-    char *r7 = "GET / HTTP/1.0\r\n:\r\n\r\n";
-    char *r8 = "GET / HTTP/1.0\r\nA: B\r\n\r\n";
+    char *r1  = "GET / HTTP/1.0\r\n\r\n";
+    char *r2  = "GET/HTTP/1.0\r\n\r\n";
+    char *r3  = "GET /HTTP/1.0\r\n\r\n";
+    char *r4  = "GET / HTTP/1.0\r\r";
+    char *r5  = "GET/ HTTP/1.0\r\n\r";
+    char *r6  = "     \r\n\r\n";
+    char *r7  = "GET / HTTP/1.0\r\n:\r\n\r\n";
+    char *r8  = "GET / HTTP/1.0\r\nA: B\r\n\r\n";
+    char *r9  = "GET / HTTP/1.0\r\nA1: AAAA\r\nA2:   BBBB\r\n\r\n";
+    char *r10 = "GET / HTTP/1.0\r\nB1: BBAA\r\nB2:   BBBB   \r\n\r\n";
 
     test(1, r1, TEST_OK);
     test(2, r2, TEST_FAIL);
@@ -333,6 +344,8 @@ int main()
     test(6, r6, TEST_FAIL);
     test(7, r7, TEST_FAIL);
     test(8, r8, TEST_OK);
+    test(9, r9, TEST_OK);
+    test(10, r10, TEST_OK);
 
     printf("\n");
     return 0;
