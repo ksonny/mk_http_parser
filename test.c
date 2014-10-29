@@ -128,6 +128,9 @@ int main()
     char *r16 = "GET / HTTP/1.0\r";
     char *r17 = "GET / HTTP/1.0\r\n";
     char *r18 = "GET / HTTP/1.0\r\n\r\r";
+    char *r19 = "GET /?a=1&b=2 HTTP/1.0\r\n\r\n";
+    char *r20 = "GET /test/?a=1&b=2 HTTP/1.0\r\n\r\n";
+    char *r21 = "GET /?HTTP/1.0\r\n\r\r";
 
     TEST(r10, MK_HTTP_OK);
     TEST(r11, MK_HTTP_ERROR);
@@ -138,6 +141,9 @@ int main()
     TEST(r16, MK_HTTP_PENDING);
     TEST(r17, MK_HTTP_PENDING);
     TEST(r18, MK_HTTP_ERROR);
+    TEST(r19, MK_HTTP_OK);
+    TEST(r20, MK_HTTP_OK);
+    TEST(r21, MK_HTTP_PENDING);
 
     /* headers */
     char *r50 = "GET / HTTP/1.0\r\n:\r\n\r\n";

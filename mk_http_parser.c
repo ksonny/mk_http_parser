@@ -57,6 +57,7 @@ int mk_http_parser(mk_http_request_t *req, char *buffer, int len)
                     parse_next();
                 }
                 else if (buffer[i] == '?') {
+                    mark_end();
                     req->status = MK_ST_REQ_QUERY_STRING;
                     parse_next();
                 }
