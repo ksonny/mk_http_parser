@@ -23,6 +23,9 @@
 
 #include "mk_http_parser.h"
 
+int t_succeed;
+int t_failed;
+
 #define TEST(str, status)  test(#str, str, status)
 
 void test(char *id, char *buf, int res)
@@ -104,6 +107,13 @@ void test(char *id, char *buf, int res)
         printf("-");
     }
     printf("*" ANSI_RESET "\n\n\n");
+
+    if (status == TEST_OK) {
+        t_succeed++;
+    }
+    else if (status == TEST_FAIL) {
+        t_failed++;
+    }
 }
 
 int main()
@@ -116,6 +126,8 @@ int main()
     char *r14 = "GET/ HTTP/1.0\r\n\r";
     char *r15 = "     \r\n\r\n";
     char *r16 = "GET / HTTP/1.0\r";
+    char *r17 = "GET / HTTP/1.0\r\n";
+    char *r18 = "GET / HTTP/1.0\r\n\r\r";
 
     TEST(r10, MK_HTTP_OK);
     TEST(r11, MK_HTTP_ERROR);
@@ -124,6 +136,8 @@ int main()
     TEST(r14, MK_HTTP_PENDING);
     TEST(r15, MK_HTTP_ERROR);
     TEST(r16, MK_HTTP_PENDING);
+    TEST(r17, MK_HTTP_PENDING);
+    TEST(r18, MK_HTTP_ERROR);
 
     /* headers */
     char *r50 = "GET / HTTP/1.0\r\n:\r\n\r\n";
@@ -131,7 +145,8 @@ int main()
     char *r52 = "GET / HTTP/1.0\r\nA1: AAAA\r\nA2:   BBBB\r\n\r\n";
     char *r53 = "GET / HTTP/1.0\r\nB1: BBAA\r\nB2:   BBBB   \r\n\r\n";
     char *r54 = "GET / HTTP/1.0\r\nB1:\r\n\r\n";
-    char *r55 = "GET / HTTP/1.0\r\nB1:\r\n";
+    char *r55 = "GET / HTTP/1.0\r\nB1:\r\r";
+    char *r56 = "GET / HTTP/1.0\r\nB1: BBAA\r\nB2:   BBBB   \r\n\r\r";
 
     TEST(r50, MK_HTTP_ERROR);
     TEST(r51, MK_HTTP_OK);
@@ -139,7 +154,13 @@ int main()
     TEST(r53, MK_HTTP_OK);
     TEST(r54, MK_HTTP_ERROR);
     TEST(r55, MK_HTTP_ERROR);
+    TEST(r56, MK_HTTP_ERROR);
 
-    printf("\n");
+    printf("%s===> Tests Passed:%s %s%s%i/%i%s\n\n",
+           ANSI_BOLD, ANSI_RESET,
+           ANSI_BOLD,
+           (t_failed > 0) ? ANSI_RED: ANSI_GREEN,
+           t_succeed, (t_succeed+t_failed), ANSI_RESET);
+
     return 0;
 }

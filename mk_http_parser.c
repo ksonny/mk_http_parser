@@ -162,7 +162,8 @@ int mk_http_parser(mk_http_request_t *req, char *buffer, int len)
         if (req->status == MK_ST_HEADER_KEY) {
             return MK_HTTP_OK;
         }
-        else {}
+        else {
+        }
     }
 
     return MK_HTTP_PENDING;
