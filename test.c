@@ -20,12 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <pthread.h>
-#include <limits.h>
 
-#include "mk_http.h"
+#include "mk_http_parser.h"
 
 #define TEST(str, status)  test(#str, str, status)
 
@@ -125,7 +121,7 @@ int main()
     TEST(r11, MK_HTTP_ERROR);
     TEST(r12, MK_HTTP_PENDING);
     TEST(r13, MK_HTTP_ERROR);
-    TEST(r14, MK_HTTP_ERROR);
+    TEST(r14, MK_HTTP_PENDING);
     TEST(r15, MK_HTTP_ERROR);
     TEST(r16, MK_HTTP_PENDING);
 
