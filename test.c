@@ -21,7 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef TEST1
 #include "mk_http_parser.h"
+#else
+#include "mk_http_parser2.h"
+#endif
 
 int t_succeed;
 int t_failed;
@@ -33,9 +37,11 @@ void test(char *id, char *buf, int res)
     int len;
     int ret;
     int status = TEST_FAIL;
-    mk_http_request_t *req = mk_http_request_new();
 
     len = strlen(buf);
+
+#ifdef TEST1
+    mk_http_request_t *req = mk_http_request_new();
     ret = mk_http_parser(req, buf, len);
 
     if (res == MK_HTTP_OK) {
@@ -47,7 +53,6 @@ void test(char *id, char *buf, int res)
         if (ret == MK_HTTP_PENDING) {
             status = TEST_OK;
         }
-
     }
 
     else if (res == MK_HTTP_ERROR) {
@@ -55,6 +60,27 @@ void test(char *id, char *buf, int res)
             status = TEST_OK;
         }
     }
+#else
+    struct mk_request req;
+    memset(&req, 0, sizeof(req));
+    ret = mk_http_parser(&req, buf, len);
+
+    if (res == MK_HTTP_OK) {
+        if (ret == 0 && req.state == MK_RESPONSE_NEW) {
+            status = TEST_OK;
+        }
+    }
+    else if (res == MK_HTTP_PENDING) {
+        if (ret == 0 && req.state == MK_RESPONSE_UNUSED) {
+            status = TEST_OK;
+        }
+    }
+    else if (res == MK_HTTP_ERROR) {
+        if (ret == -1) {
+            status = TEST_OK;
+        }
+    }
+#endif
 
     if (status == TEST_OK) {
         printf("%s[%s%s%s______OK_____%s%s]%s  ",
@@ -134,8 +160,8 @@ int main()
 
     TEST(r10, MK_HTTP_OK);
     TEST(r11, MK_HTTP_ERROR);
-    TEST(r12, MK_HTTP_PENDING);
-    TEST(r13, MK_HTTP_ERROR);
+    TEST(r12, MK_HTTP_ERROR);
+    TEST(r13, MK_HTTP_PENDING);
     TEST(r14, MK_HTTP_PENDING);
     TEST(r15, MK_HTTP_ERROR);
     TEST(r16, MK_HTTP_PENDING);
